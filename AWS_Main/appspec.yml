@@ -1,0 +1,14 @@
+version: 0.0
+os: linux
+
+files:             
+  - source: webapp/springbootapi/target/ROOT.war
+    destination: /opt/tomcat/webapps
+  - source: cloudwatch-config.json
+    destination: /opt
+
+hooks:
+  AfterInstall:
+   - location: ./afterInstall.sh
+     timeout: 180
+     runas: centos

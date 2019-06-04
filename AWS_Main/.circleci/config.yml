@@ -1,0 +1,60 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/openjdk:8u171-jdk
+    steps:
+      - checkout
+
+      - run:
+          name: Install packages
+          command: sudo apt-get update && sudo apt-get install wget zip unzip python2.7 python-pip maven -y
+
+
+      - run:
+          name: Install awscli
+          command: sudo pip install awscli
+
+      - run:
+          name: Build Artifact
+          command: |
+            cd webapp/springbootapi
+            pwd
+            ls -al
+            mvn test
+            mvn clean package
+            cd target/
+            ls -al
+            cd ../
+            cd ../
+            pwd
+            ls -al
+
+      - run:
+          name: Zip Artifact
+          command: |
+            echo "Hello the current build number is ${CIRCLE_BUILD_NUM}"
+            pwd
+            mkdir -p codedeploy_artifact
+            cp infrastructure/aws/codedeploy/*.sh .
+            cp infrastructure/aws/codedeploy/*.json .
+            zip -r csye6225-web-app-${CIRCLE_BUILD_NUM}.zip webapp/springbootapi/target/ROOT.war *.sh *.yml *.json
+            mv csye6225-web-app-${CIRCLE_BUILD_NUM}.zip codedeploy_artifact/
+            cd codedeploy_artifact
+            ls -al
+            pwd
+            cd ..
+            pwd
+            ls -al
+      - run:
+          name: Upload Artifact to S3
+          command: |
+            aws s3 sync codedeploy_artifact s3://${DEPLOY_BUCKET_NAME}
+      - run:
+          name: Make CodeDeploy API call
+          command: |
+            echo "Start CodeDeploy" 
+            aws deploy create-deployment \
+            --application-name csye6225-webapp \
+            --deployment-group-name csye6225-webapp-deployment \
+            --s3-location bucket="${DEPLOY_BUCKET_NAME}",key="csye6225-web-app-${CIRCLE_BUILD_NUM}.zip",bundleType=zip 

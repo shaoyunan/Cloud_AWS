@@ -1,0 +1,36 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:2.7-jessie
+    steps:
+      - checkout
+      - run:
+          name: Install packages
+          command: sudo apt-get update && sudo apt-get install wget zip unzip -y
+      - run:
+          name: Install awscli
+          command: sudo pip install awscli
+      - run:
+          name: Download packer
+          command: |
+            wget -q https://releases.hashicorp.com/packer/1.3.4/packer_1.3.4_linux_amd64.zip 
+            unzip packer*.zip  
+            chmod +x packer
+      - run:
+          name: Validate Packer Template
+          command: ./packer validate centos-ami-template.json
+      - run:
+          name: Build AMI
+          command: |
+            subnets=$(aws cloudformation describe-stacks --query 'Stacks[].Outputs[?OutputKey==`amisubnet1`].OutputValue' --output text)
+            arr=($subnets)
+            LATEST_SUBNET_ID=${arr[0]}
+            echo ${LATEST_SUBNET_ID}
+            ./packer build \
+            -var "aws_access_key=${AWS_ACCESS_KEY_ID}" \
+            -var "aws_secret_key=${AWS_SECRET_ACCESS_KEY}" \
+            -var "aws_region=${AWS_DEFAULT_REGION}" \
+            -var "subnet_id=${LATEST_SUBNET_ID}" \
+            centos-ami-template.json
+

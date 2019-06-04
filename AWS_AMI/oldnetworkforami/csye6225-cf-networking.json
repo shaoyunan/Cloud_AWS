@@ -1,0 +1,270 @@
+{
+  "Description": "Networking Stack",
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+    "stackname": {
+      "Description": "Stack Name",
+      "Type": "String",
+      "Default": "stack01"
+    }
+  },
+  "Outputs" : {
+  "amisubnet1" : {
+    "Description" : "The subnet ID to use for public web servers",
+    "Value" :  { "Ref" : "subnet1" },
+    "Export" : { "Name" : {"Fn::Sub": "${AWS::StackName}-subnet1ID" }}
+  },
+  "amisubnet2" : {
+    "Description" : "The subnet ID to use for public web servers",
+    "Value" :  { "Ref" : "subnet2" },
+    "Export" : { "Name" : {"Fn::Sub": "${AWS::StackName}-subnet2ID" }}
+  },
+  "amisubnet3" : {
+    "Description" : "The subnet ID to use for public web servers",
+    "Value" :  { "Ref" : "subnet3" },
+    "Export" : { "Name" : {"Fn::Sub": "${AWS::StackName}-subnet3ID" }}
+  },
+  "vpc" : {
+    "Description" : "The vpc ID to use for public web servers",
+    "Value" :  { "Ref" : "vpc" },
+    "Export" : { "Name" : {"Fn::Sub": "${AWS::StackName}-vpcID" }}
+  }
+},
+  "Resources": {
+    "vpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "stackname"
+                  },
+                  "-csye6225-vpc"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "subnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "CidrBlock": "10.0.0.0/24",
+        "AvailabilityZone": "us-east-1a",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "stackname"
+                  },
+                  "-csye6225-subnet-1"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "subnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "CidrBlock": "10.0.1.0/24",
+        "AvailabilityZone": "us-east-1b",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "stackname"
+                  },
+                  "-csye6225-subnet-2"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "subnet3": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "CidrBlock": "10.0.2.0/24",
+        "AvailabilityZone": "us-east-1c",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "stackname"
+                  },
+                  "-csye6225-subnet-3"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ig": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "stackname"
+                  },
+                  "-csye6225-ig"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "vpcIgAttch": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "InternetGatewayId": {
+          "Ref": "ig"
+        },
+        "VpcId": {
+          "Ref": "vpc"
+        }
+      }
+    },
+    "routeTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "vpc"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "stackname"
+                  },
+                  "-csye6225-rt"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "subnetRouteTableAssociation1": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "subnet1"
+        },
+        "RouteTableId": {
+          "Ref": "routeTable"
+        }
+      }
+    },
+    "subnetRouteTableAssociation2": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "subnet2"
+        },
+        "RouteTableId": {
+          "Ref": "routeTable"
+        }
+      }
+    },
+    "subnetRouteTableAssociation3": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "subnet3"
+        },
+        "RouteTableId": {
+          "Ref": "routeTable"
+        }
+      }
+    },
+    "route1": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "ig"
+        },
+        "RouteTableId": {
+          "Ref": "routeTable"
+        }
+      }
+    },
+    "securityGroupPort22": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": {
+          "Fn::GetAtt": [
+            "vpc",
+            "DefaultSecurityGroup"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "FromPort": "22",
+        "ToPort": "22",
+        "CidrIp": "0.0.0.0/0"
+      }
+    },
+    "securityGroupPort80": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": {
+          "Fn::GetAtt": [
+            "vpc",
+            "DefaultSecurityGroup"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "FromPort": "80",
+        "ToPort": "80",
+        "CidrIp": "0.0.0.0/0"
+      }
+    }
+  }
+}
